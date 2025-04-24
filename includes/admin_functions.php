@@ -1,4 +1,3 @@
-
 <?php
 /**
  * Arquivo de funções administrativas
@@ -62,6 +61,30 @@ function get_monthly_revenue() {
         AND MONTH(created_at) = MONTH(CURRENT_DATE()) 
         AND YEAR(created_at) = YEAR(CURRENT_DATE())
     ");
+    return $stmt->fetchColumn();
+}
+
+/**
+ * Obtém a receita total
+ * 
+ * @return float Valor total da receita
+ */
+function get_total_revenue() {
+    global $db;
+    $stmt = $db->query("SELECT SUM(amount) FROM payments WHERE status = 'completed'");
+    return $stmt->fetchColumn() ?: 0;
+}
+
+/**
+ * Obtém o número de transações por status
+ * 
+ * @param string $status Status da transação
+ * @return int Número de transações
+ */
+function get_transactions_by_status($status) {
+    global $db;
+    $stmt = $db->prepare("SELECT COUNT(*) FROM payments WHERE status = ?");
+    $stmt->execute([$status]);
     return $stmt->fetchColumn();
 }
 
@@ -236,9 +259,10 @@ function get_recent_activities($limit = 10) {
             users u ON al.user_id = u.id
         ORDER BY 
             al.created_at DESC
-        LIMIT ?
+        LIMIT :limit
     ");
-    $stmt->execute([$limit]);
+    $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
+    $stmt->execute();
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
@@ -253,9 +277,10 @@ function get_recent_users($limit = 5) {
     $stmt = $db->prepare("
         SELECT * FROM users
         ORDER BY created_at DESC
-        LIMIT ?
+        LIMIT :limit
     ");
-    $stmt->execute([$limit]);
+    $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
+    $stmt->execute();
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
@@ -267,72 +292,27 @@ function get_recent_users($limit = 5) {
  */
 function get_admin_notifications($limit = 5) {
     global $db;
-    $notifications = [];
+    // Converter explicitamente para inteiro
+    $limit = (int)$limit;
     
-    // Tickets de suporte novos
-    $stmt = $db->prepare("
-        SELECT 
-            id, 
-            subject, 
-            created_at,
-            'support' as type
-        FROM 
-            support_tickets
-        WHERE 
-            status = 'open'
-        ORDER BY 
-            created_at DESC
-        LIMIT ?
-    ");
-    $stmt->execute([$limit]);
-    $support_tickets = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    
-    foreach ($support_tickets as $ticket) {
-        $notifications[] = [
-            'message' => "Novo ticket: {$ticket['subject']}",
-            'link' => "pages/support_ticket.php?id={$ticket['id']}",
-            'icon' => 'fas fa-headset',
-            'icon_class' => 'bg-danger',
-            'created_at' => $ticket['created_at'],
-        ];
+    // Check if the notifications table exists
+    try {
+        $stmt = $db->prepare("
+            SELECT * FROM notifications 
+            WHERE is_admin = 1 
+            ORDER BY created_at DESC 
+            LIMIT $limit
+        ");
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        // If table doesn't exist, return an empty array
+        if ($e->getCode() == '42S02') {
+            return [];
+        }
+        // For other errors, rethrow the exception
+        throw $e;
     }
-    
-    // Novas assinaturas
-    $stmt = $db->prepare("
-        SELECT 
-            s.id,
-            u.username,
-            p.name as plan_name,
-            s.created_at
-        FROM 
-            user_subscriptions s
-        JOIN 
-            users u ON s.user_id = u.id
-        JOIN 
-            subscription_plans p ON s.plan_id = p.id
-        ORDER BY 
-            s.created_at DESC
-        LIMIT ?
-    ");
-    $stmt->execute([$limit]);
-    $subscriptions = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    
-    foreach ($subscriptions as $subscription) {
-        $notifications[] = [
-            'message' => "{$subscription['username']} assinou {$subscription['plan_name']}",
-            'link' => "pages/subscriptions.php?id={$subscription['id']}",
-            'icon' => 'fas fa-credit-card',
-            'icon_class' => 'bg-success',
-            'created_at' => $subscription['created_at'],
-        ];
-    }
-    
-    // Ordenar por data (mais recentes primeiro)
-    usort($notifications, function($a, $b) {
-        return strtotime($b['created_at']) - strtotime($a['created_at']);
-    });
-    
-    return array_slice($notifications, 0, $limit);
 }
 
 /**
@@ -344,7 +324,7 @@ function get_admin_notifications($limit = 5) {
 function get_user_avatar($user_id) {
     // Aqui poderia verificar se o usuário tem um avatar personalizado
     // Por padrão, retorna um avatar genérico
-    return "../assets/images/default-avatar.png";
+    return "../assets/images/logo.png";
 }
 
 /**
@@ -359,7 +339,8 @@ function time_elapsed_string($datetime, $full = false) {
     $ago = new DateTime($datetime);
     $diff = $now->diff($ago);
 
-    $diff->w = floor($diff->d / 7);
+    // Create a public property 'w' to store weeks
+    $diff = (object) array_merge((array) $diff, ['w' => floor($diff->d / 7)]);
     $diff->d -= $diff->w * 7;
 
     $string = array(
@@ -436,13 +417,36 @@ function admin_has_permission($required_role = 'admin') {
 
 /**
  * Formata um valor em Reais
+ * Versão para administração com opções adicionais
  *
  * @param float $value Valor a ser formatado
  * @param bool $with_symbol Incluir o símbolo R$
  * @return string Valor formatado
  */
-function format_currency($value, $with_symbol = true) {
-    $formatted = number_format($value, 2, ',', '.');
-    return $with_symbol ? "R$ {$formatted}" : $formatted;
+// Verificar se a função já existe antes de declará-la para evitar duplicidade
+if (!function_exists('admin_format_currency')) {
+    function admin_format_currency($value, $with_symbol = true) {
+        $formatted = number_format($value, 2, ',', '.');
+        return $with_symbol ? "R$ {$formatted}" : $formatted;
+    }
 }
-?>
+
+/**
+ * Obtém uma configuração do sistema
+ * 
+ * @param string $key Chave da configuração
+ * @param mixed $default Valor padrão caso não encontre
+ * @return mixed Valor da configuração
+ */
+function get_setting($key, $default = null) {
+    global $db;
+    try {
+        $stmt = $db->prepare("SELECT setting_value FROM settings WHERE setting_key = ? LIMIT 1");
+        $stmt->execute([$key]);
+        $result = $stmt->fetch(PDO::FETCH_COLUMN);
+    return $result !== false ? $result : $default;
+    } catch (Exception $e) {
+        error_log("Error getting setting {$key}: " . $e->getMessage());
+        return $default;
+    }
+}

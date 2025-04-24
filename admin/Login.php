@@ -2,12 +2,12 @@
 require_once '../includes/config.php';
 require_once '../includes/db.php';
 require_once '../includes/functions.php';
-require_once '../includes/auth.php'; // Adicionando auth.php
+require_once '../includes/admin_auth.php'; // Incluir o arquivo de autenticação admin
 
-// Verificar se o usuário já está logado
-if (isset($_SESSION['user_id'])) {
-    // Usar header diretamente em vez da função redirect
-    header('Location: ../dashboard/index.php');
+// Verificar se o administrador já está logado
+if (isset($_SESSION['admin_id'])) {
+    // Redirecionar para o dashboard administrativo
+    header('Location: index.php');
     exit();
 }
 
@@ -17,21 +17,15 @@ $error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = trim($_POST['username']);
     $password = $_POST['password'];
-    $remember = isset($_POST['remember']);
 
     // Validação básica
     if (empty($username) || empty($password)) {
         $error = 'Por favor, preencha todos os campos.';
     } else {
-        // Usar a classe Auth para fazer login
-        $user = $auth->login($username, $password, $remember);
-
-        if ($user) {
-            // Login bem-sucedido
-            $_SESSION['login_success'] = true;
-
-            // Redirecionar para o dashboard
-            header('Location: ../dashboard/index.php');
+        // Verificar credenciais específicas para administradores
+        if ($admin_auth->login($username, $password)) {
+            // Redirecionar para o dashboard administrativo
+            header('Location: index.php');
             exit();
         } else {
             $error = 'Nome de usuário ou senha inválidos.';
@@ -71,7 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="alert alert-danger"><?php echo $error; ?></div>
         <?php endif; ?>
 
-        <form method="POST" action="login.php" class="auth-form">
+        <form method="POST" action="Login.php" class="auth-form">
             <div class="form-group">
                 <label for="username">Usuário</label>
                 <div class="input-group">

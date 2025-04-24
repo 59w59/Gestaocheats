@@ -1,7 +1,3 @@
-# Arquivo .htaccess principal para Gaming Platform
-# Configurações para segurança, performance e URLs amigáveis
-
-# Ativar o módulo de reescrita
 RewriteEngine On
 
 # Base para todas as regras de reescrita
@@ -82,14 +78,26 @@ Options -Indexes
     AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json application/xml
 </IfModule>
 
+# Configurações de MIME types
+<IfModule mod_mime.c>
+    # Definir tipos MIME corretos
+    AddType application/javascript .js
+    AddType text/css .css
+    AddType text/html .html .htm
+    AddType image/svg+xml .svg
+    AddType application/font-woff .woff
+    AddType application/font-woff2 .woff2
+    AddType application/json .json
+</IfModule>
+
 # Configuração de PHP (se permitido no .htaccess)
 <IfModule mod_php7.c>
     # Tempo máximo de execução do script
-    php_value max_execution_time 60
+    php_value max_execution_time 300
     
     # Tamanho máximo de upload
-    php_value upload_max_filesize 10M
-    php_value post_max_size 10M
+    php_value upload_max_filesize 1024M
+    php_value post_max_size 1025M
     
     # Ocultar erros em produção
     php_flag display_errors off
@@ -99,6 +107,12 @@ Options -Indexes
     
     # Timezone
     php_value date.timezone America/Sao_Paulo
+
+    # Limite de memória
+    php_value memory_limit 1536M
+
+    # Tempo máximo de entrada
+    php_value max_input_time 300
 </IfModule>
 
 # Regras específicas para páginas de autenticação
@@ -117,6 +131,22 @@ Options -Indexes
     RewriteCond %{HTTP_COOKIE} !user_logged_in=true
     RewriteRule .* /auth/login.php [R,L]
 </IfModule>
+
+# Proteção para área administrativa
+<IfModule mod_rewrite.c>
+    RewriteCond %{REQUEST_URI} ^/admin/(?!login\.php)
+    RewriteCond %{HTTP_COOKIE} !admin_logged_in=true
+    RewriteRule .* /admin/login.php [R,L]
+</IfModule>
+
+# Proteção adicional - configuração de autenticação HTTP básica
+# Descomente as linhas abaixo para implementar autenticação HTTP
+# (Você precisará criar o arquivo .htpasswd)
+
+# AuthType Basic
+# AuthName "Área Administrativa Restrita"
+# AuthUserFile /caminho/completo/para/.htpasswd
+# Require valid-user
 
 # Lidar com erros personalizados
 ErrorDocument 404 /pages/error.php?code=404

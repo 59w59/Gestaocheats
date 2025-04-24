@@ -1,0 +1,199 @@
+/* Customizações e Variáveis Avançadas para Gaming Platform */
+
+:root {
+    /* Esquema de cores principal */
+    --primary: #00CF9B;          /* Caribbean green - principal */
+    --primary-light: #47E9C4;    /* Mint - versão clara */
+    --primary-lighter: #90C0B6;  /* Pistachio - versão mais clara */
+    --primary-dark: #03543C;     /* Bangladesh green - escuro */
+    --primary-darker: #032221;   /* Dark green - mais escuro */
+    --primary-glow: 0 0 20px rgba(0, 207, 155, 0.6);
+    --primary-alpha-10: rgba(0, 207, 155, 0.1);
+    --primary-alpha-20: rgba(0, 207, 155, 0.2);
+    --primary-alpha-50: rgba(0, 207, 155, 0.5);
+    --primary-alpha-80: rgba(0, 207, 155, 0.8);
+
+    --secondary: #14C149;        /* Mountain meadow - secundária */
+    --secondary-light: #22C5B9;  /* Frog - versão clara */
+    --secondary-dark: #0E5A48;   /* Forest - escuro */
+    --secondary-glow: 0 0 20px rgba(20, 193, 73, 0.6);
+    --secondary-alpha-10: rgba(20, 193, 73, 0.1);
+    --secondary-alpha-20: rgba(20, 193, 73, 0.2);
+    --secondary-alpha-50: rgba(20, 193, 73, 0.5);
+
+    --accent: #0C5A54;           /* Basil - accent */
+    --accent-light: #22C5B9;     /* Frog - versão clara */
+    --accent-dark: #002C3A;      /* Pine - escuro */
+    --accent-glow: 0 0 20px rgba(12, 90, 84, 0.6);
+    --accent-alpha-10: rgba(12, 90, 84, 0.1);
+    --accent-alpha-20: rgba(12, 90, 84, 0.2);
+    --accent-alpha-50: rgba(12, 90, 84, 0.5);
+
+    --dark: #000F1B;             /* Rich black - fundo escuro */
+    --dark-light: #002C3A;       /* Pine - fundo menos escuro */
+    --dark-lighter: #03543C;     /* Bangladesh green - fundo levemente mais claro */
+    --dark-alpha-50: rgba(0, 15, 27, 0.5);
+    --dark-alpha-80: rgba(0, 15, 27, 0.8);
+    --dark-alpha-90: rgba(0, 15, 27, 0.9);
+    --dark-gradient: linear-gradient(135deg, var(--dark), var(--dark-light));
+    --dark-radial: radial-gradient(circle at center, var(--dark-light), var(--dark) 70%);
+
+    --card: #001824;             /* Fundo dos cards - rich black mais escuro */
+    --card-hover: #00263A;       /* Hover dos cards */
+    --card-active: #00324A;      /* Active dos cards */
+    --input: #002436;            /* Fundo dos inputs */
+    --border: rgba(255, 255, 255, 0.1); /* Bordas */
+    --border-glow: rgba(0, 207, 155, 0.3);
+    --text: #FFFFFF;             /* White - texto principal */
+    --text-muted: #F1F7F6;       /* Anti-flash white - texto secundário com transparência */
+    --text-secondary: rgba(241, 247, 246, 0.85); /* Anti-flash white - texto secundário */
+    --text-highlight: #00CF9B;   /* Caribbean green - destaque de texto */
+    --input-text: #FFFFFF;       /* White - texto em inputs */
+
+    /* Cores de jogo específicas com glow */
+    --free-fire: #14C149;
+    --free-fire-glow: 0 0 20px rgba(20, 193, 73, 0.6);
+    --fivem: #00CF9B;
+    --fivem-glow: 0 0 20px rgba(0, 207, 155, 0.6);
+    --warzone: #47E9C4;
+    --warzone-glow: 0 0 20px rgba(71, 233, 196, 0.6);
+    --valorant: #22C5B9;
+    --valorant-glow: 0 0 20px rgba(34, 197, 185, 0.6);
+
+    /* Status */
+    --danger: #FF3A4E;           /* Vermelho para alerta */
+    --danger-light: #FF6A7A;
+    --danger-dark: #CC0020;
+    --danger-glow: 0 0 20px rgba(255, 58, 78, 0.6);
+    --danger-alpha-50: rgba(255, 58, 78, 0.5);
+
+    --success: var(--primary);   /* Verde para sucesso */
+    --success-light: var(--primary-light);
+    --success-dark: var(--primary-dark);
+    --success-glow: var(--primary-glow);
+    --success-alpha-50: rgba(0, 207, 155, 0.5);
+
+    --warning: #F9CB40;          /* Amarelo para avisos */
+    --warning-light: #FFDE6A;
+    --warning-dark: #C69A00;
+    --warning-glow: 0 0 20px rgba(249, 203, 64, 0.6);
+    --warning-alpha-50: rgba(249, 203, 64, 0.5);
+
+    --info: #22C5B9;             /* Azul-verde para informações */
+    --info-light: #47E9DD;
+    --info-dark: #0E8C83;
+    --info-glow: 0 0 20px rgba(34, 197, 185, 0.6);
+    --info-alpha-50: rgba(34, 197, 185, 0.5);
+
+    /* Sombras aprimoradas */
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 15px rgba(0, 0, 0, 0.35);
+    --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.4);
+    --shadow-xl: 0 20px 50px rgba(0, 0, 0, 0.5);
+    --shadow-primary: 0 5px 20px rgba(0, 207, 155, 0.35);
+    --shadow-secondary: 0 5px 20px rgba(20, 193, 73, 0.35);
+    --shadow-accent: 0 5px 20px rgba(12, 90, 84, 0.35);
+    --glow-primary: 0 0 20px rgba(0, 207, 155, 0.6);
+    --glow-secondary: 0 0 20px rgba(20, 193, 73, 0.6);
+    --glow-accent: 0 0 20px rgba(12, 90, 84, 0.6);
+
+    /* Transições aprimoradas */
+    --transition-fast: 0.2s cubic-bezier(0.25, 1, 0.5, 1);
+    --transition-normal: 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+    --transition-slow: 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+    --transition-bounce: 0.5s cubic-bezier(0.5, -0.5, 0.1, 1.5);
+    --transition-elastic: 0.6s cubic-bezier(0.5, 1.8, 0.1, 1.2);
+    --transition-in-out: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* Bordas mais dinâmicas */
+    --border-radius-sm: 6px;
+    --border-radius-md: 10px;
+    --border-radius-lg: 16px;
+    --border-radius-xl: 24px;
+    --border-radius-2xl: 32px;
+    --border-radius-full: 9999px;
+
+    /* Fontes gaming otimizadas */
+    --font-primary: 'Chakra Petch', 'Rajdhani', 'Inter', sans-serif;
+    --font-secondary: 'Rajdhani', 'Poppins', sans-serif;
+    --font-display: 'Orbitron', 'Audiowide', sans-serif;
+    --font-mono: 'IBM Plex Mono', 'Consolas', monospace;
+    --font-size-xs: 0.75rem;
+    --font-size-sm: 0.875rem;
+    --font-size-md: 1rem;
+    --font-size-lg: 1.125rem;
+    --font-size-xl: 1.25rem;
+    --font-size-2xl: 1.5rem;
+    --font-size-3xl: 1.875rem;
+    --font-size-4xl: 2.25rem;
+    --font-size-5xl: 3rem;
+    --font-size-6xl: 3.75rem;
+    --font-size-7xl: 4.5rem;
+    --font-weight-light: 300;
+    --font-weight-normal: 400;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+    --font-weight-bold: 700;
+    --font-weight-extrabold: 800;
+    --line-height-tight: 1.2;
+    --line-height-normal: 1.5;
+    --line-height-relaxed: 1.75;
+    --letter-spacing-tight: -0.01em;
+    --letter-spacing-normal: 0em;
+    --letter-spacing-wide: 0.05em;
+    --letter-spacing-wider: 0.1em;
+    --letter-spacing-widest: 0.15em;
+
+    /* Espaçamentos refinados */
+    --spacing-xxs: 4px;
+    --spacing-xs: 8px;
+    --spacing-sm: 12px;
+    --spacing-md: 16px;
+    --spacing-lg: 24px;
+    --spacing-xl: 32px;
+    --spacing-2xl: 48px;
+    --spacing-3xl: 64px;
+    --spacing-4xl: 96px;
+    --spacing-5xl: 128px;
+
+    /* Gradientes vibrantes */
+    --gradient-primary: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    --gradient-primary-accent: linear-gradient(135deg, var(--primary), var(--accent));
+    --gradient-secondary: linear-gradient(135deg, var(--secondary), var(--accent));
+    --gradient-accent: linear-gradient(135deg, var(--accent), var(--primary));
+    --gradient-dark: linear-gradient(135deg, var(--dark), var(--dark-lighter));
+    --gradient-game: linear-gradient(135deg, var(--secondary), var(--primary));
+    --gradient-rainbow: linear-gradient(90deg, var(--primary), var(--info), var(--secondary), var(--primary-lighter), var(--warning));
+
+    /* Animações refinadas */
+    --animation-fast: 150ms;
+    --animation-normal: 300ms;
+    --animation-slow: 500ms;
+    --animation-delay-step: 100ms;
+    --section-delay: 200ms;
+
+    /* Z-index layers organizados */
+    --z-dropdown: 1000;
+    --z-sticky: 1020;
+    --z-fixed: 1030;
+    --z-modal-backdrop: 1040;
+    --z-modal: 1050;
+    --z-popover: 1060;
+    --z-tooltip: 1070;
+    --z-floating: 1080;
+
+    /* Filtros aprimorados */
+    --blur-sm: blur(4px);
+    --blur-md: blur(8px);
+    --blur-lg: blur(16px);
+    --blur-xl: blur(24px);
+    --brightness-dim: brightness(0.7);
+    --brightness-normal: brightness(1);
+    --brightness-bright: brightness(1.3);
+    --contrast-high: contrast(1.2);
+    --saturate-high: saturate(1.5);
+
+    /* Cores neutras adicionais */
+    --stone: #5D4E5A;           /* Stone - cor neutra escura */
+    --pistachio: #90C0B6;       /* Pistachio - cor neutra clara */
+}

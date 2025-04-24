@@ -7,11 +7,11 @@ require_once '../includes/auth.php';
 
 // Verificar se o administrador está logado
 if (!isset($_SESSION['admin_id'])) {
-    redirect('login.php');
+    header('Location: login.php');
     exit;
 }
 
 // Redireciona para o dashboard administrativo
-header('Location: AdminDashboard.php');
+header('Location: index.php'); // Supondo que index.php seja o dashboard admin
 exit;
 ?>

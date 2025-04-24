@@ -1,305 +1,282 @@
 /**
- * Main.js - Funções principais do sistema
- * Arquivo principal de JavaScript para o site
+ * Particles.js - Sistema de partículas para páginas de autenticação
+ * Versão 1.0.0
  */
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Inicialização do sistema
-    initPasswordToggle();
-    initAlertDismiss();
-    enhanceFormInteractions();
-    setupAccessibilityFeatures();
-
-    // Se estiver na página de autenticação, adicionar efeitos específicos
-    if (document.querySelector('.auth-page')) {
-        enhanceAuthPage();
+    // Criar o container de partículas se ainda não existir
+    if (!document.getElementById('particles-container')) {
+        const particlesContainer = document.createElement('div');
+        particlesContainer.id = 'particles-container';
+        
+        // Adicionar antes do primeiro elemento filho do body
+        document.body.insertBefore(particlesContainer, document.body.firstChild);
     }
-});
-
-/**
- * Inicializa o toggle de visualização de senha
- */
-function initPasswordToggle() {
-    const passwordFields = document.querySelectorAll('input[type="password"]');
-
-    passwordFields.forEach(field => {
-        // Criar o botão de toggle apenas se não existir
-        if (!field.parentElement.querySelector('.password-toggle')) {
-            const toggleBtn = document.createElement('button');
-            toggleBtn.type = 'button';
-            toggleBtn.className = 'password-toggle';
-            toggleBtn.innerHTML = '<i class="fas fa-eye"></i>';
-            toggleBtn.setAttribute('aria-label', 'Mostrar senha');
-            toggleBtn.style.position = 'absolute';
-            toggleBtn.style.right = '12px';
-            toggleBtn.style.top = '50%';
-            toggleBtn.style.transform = 'translateY(-50%)';
-            toggleBtn.style.background = 'transparent';
-            toggleBtn.style.border = 'none';
-            toggleBtn.style.color = 'var(--primary)';
-            toggleBtn.style.cursor = 'pointer';
-            toggleBtn.style.fontSize = '1rem';
-            toggleBtn.style.zIndex = '2';
-
-            // Posicionar relativamente se estiver dentro de um input-group
-            const inputParent = field.parentElement;
-            if (!inputParent.style.position || inputParent.style.position === 'static') {
-                inputParent.style.position = 'relative';
-            }
-
-            // Adicionar depois do campo
-            field.parentNode.appendChild(toggleBtn);
-
-            // Adicionar espaço à direita no campo para não sobrepor o ícone
-            field.style.paddingRight = '40px';
-
-            // Adicionar evento de clique
-            toggleBtn.addEventListener('click', function() {
-                const isPassword = field.type === 'password';
-                field.type = isPassword ? 'text' : 'password';
-                toggleBtn.innerHTML = isPassword ?
-                    '<i class="fas fa-eye-slash"></i>' :
-                    '<i class="fas fa-eye"></i>';
-                toggleBtn.setAttribute('aria-label',
-                    isPassword ? 'Esconder senha' : 'Mostrar senha');
-            });
+    
+    const particlesContainer = document.getElementById('particles-container');
+    
+    // Detectar dispositivo para ajustar configurações
+    const isMobile = window.innerWidth < 768;
+    const isLowPower = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    
+    // Configurações de partículas - ajustadas para desempenho
+    const config = {
+        particleCount: isLowPower ? 15 : (isMobile ? 25 : 40),
+        particleColors: [
+            'rgba(0, 207, 155, 0.5)',   // primary
+            'rgba(20, 193, 73, 0.5)',   // secondary
+            'rgba(12, 90, 84, 0.5)',    // accent
+            'rgba(71, 233, 196, 0.5)',  // primary-light
+            'rgba(34, 197, 185, 0.5)'   // info
+        ],
+        minSize: isMobile ? 2 : 3,
+        maxSize: isMobile ? 5 : 8,
+        minOpacity: 0.2,
+        maxOpacity: 0.8,
+        connectionDistance: isMobile ? 10 : 15,
+        useGlow: !isLowPower && !isMobile,
+        animationSpeed: isLowPower ? 0.5 : 1
+    };
+    
+    // Array para armazenar todas as partículas
+    const particles = [];
+    
+    // Criar SVG container
+    const svgNS = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(svgNS, 'svg');
+    svg.setAttribute('width', '100%');
+    svg.setAttribute('height', '100%');
+    svg.style.position = 'absolute';
+    particlesContainer.appendChild(svg);
+    
+    // Defs para filtros
+    const defs = document.createElementNS(svgNS, 'defs');
+    svg.appendChild(defs);
+    
+    // Criar filtro de glow apenas se necessário
+    if (config.useGlow) {
+        const filter = document.createElementNS(svgNS, 'filter');
+        filter.setAttribute('id', 'glow');
+        
+        const feGaussianBlur = document.createElementNS(svgNS, 'feGaussianBlur');
+        feGaussianBlur.setAttribute('stdDeviation', '2');
+        feGaussianBlur.setAttribute('result', 'blur');
+        filter.appendChild(feGaussianBlur);
+        
+        const feColorMatrix = document.createElementNS(svgNS, 'feColorMatrix');
+        feColorMatrix.setAttribute('in', 'blur');
+        feColorMatrix.setAttribute('type', 'matrix');
+        feColorMatrix.setAttribute('values', '1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 10 -3');
+        feColorMatrix.setAttribute('result', 'glow');
+        filter.appendChild(feColorMatrix);
+        
+        const feMerge = document.createElementNS(svgNS, 'feMerge');
+        const feMergeNode1 = document.createElementNS(svgNS, 'feMergeNode');
+        feMergeNode1.setAttribute('in', 'glow');
+        const feMergeNode2 = document.createElementNS(svgNS, 'feMergeNode');
+        feMergeNode2.setAttribute('in', 'SourceGraphic');
+        feMerge.appendChild(feMergeNode1);
+        feMerge.appendChild(feMergeNode2);
+        filter.appendChild(feMerge);
+        
+        defs.appendChild(filter);
+    }
+    
+    // Grupo para conexões
+    const connections = document.createElementNS(svgNS, 'g');
+    connections.setAttribute('stroke', 'rgba(0, 207, 155, 0.1)');
+    connections.setAttribute('stroke-width', isMobile ? '0.3' : '0.5');
+    svg.appendChild(connections);
+    
+    // Grupo para partículas
+    const particlesGroup = document.createElementNS(svgNS, 'g');
+    svg.appendChild(particlesGroup);
+    
+    // Função para criar uma partícula
+    function createParticle() {
+        const particle = {
+            element: document.createElementNS(svgNS, 'circle'),
+            x: Math.random() * 100,
+            y: Math.random() * 100,
+            size: config.minSize + Math.random() * (config.maxSize - config.minSize),
+            speedX: (Math.random() - 0.5) * 0.1 * config.animationSpeed,
+            speedY: (Math.random() - 0.5) * 0.1 * config.animationSpeed,
+            opacity: config.minOpacity + Math.random() * (config.maxOpacity - config.minOpacity),
+            color: config.particleColors[Math.floor(Math.random() * config.particleColors.length)],
+            pulse: Math.random() * 2 * Math.PI,
+            pulseSpeed: 0.01 + Math.random() * 0.02 * config.animationSpeed
+        };
+        
+        particle.element.setAttribute('cx', `${particle.x}%`);
+        particle.element.setAttribute('cy', `${particle.y}%`);
+        particle.element.setAttribute('r', particle.size);
+        particle.element.setAttribute('fill', particle.color);
+        particle.element.setAttribute('opacity', particle.opacity);
+        
+        if (config.useGlow) {
+            particle.element.setAttribute('filter', 'url(#glow)');
+        }
+        
+        particlesGroup.appendChild(particle.element);
+        particles.push(particle);
+    }
+    
+    // Criar partículas iniciais
+    for (let i = 0; i < config.particleCount; i++) {
+        createParticle();
+    }
+    
+    // Redimensionar o SVG quando a janela mudar de tamanho
+    function handleResize() {
+        // Ajustar atributos ou configurações se necessário
+        const isMobileNow = window.innerWidth < 768;
+        if (isMobile !== isMobileNow) {
+            // Se mudou de mobile para desktop ou vice-versa, ajustar configurações
+            connections.setAttribute('stroke-width', isMobileNow ? '0.3' : '0.5');
+        }
+    }
+    
+    window.addEventListener('resize', handleResize);
+    
+    // Variável para controlar se a animação deve continuar
+    let animating = true;
+    
+    // Otimização: verificar se a página está visível
+    document.addEventListener('visibilitychange', function() {
+        animating = !document.hidden;
+        if (animating) {
+            requestAnimationFrame(updateParticles);
         }
     });
-}
-
-/**
- * Inicializa a funcionalidade de fechar alertas
- */
-function initAlertDismiss() {
-    const alerts = document.querySelectorAll('.alert');
-
-    alerts.forEach(alert => {
-        // Não adicionar botão de fechar se o alerta for temporário
-        if (alert.classList.contains('alert-auto-dismiss')) {
-            // Configurar timeout para remover automaticamente
-            setTimeout(() => {
-                fadeOutAndRemove(alert);
-            }, 5000); // 5 segundos
-            return;
+    
+    // Atualizar partículas e conexões
+    function updateParticles() {
+        if (!animating) return;
+        
+        // Limpar conexões anteriores para redesenhar
+        while (connections.firstChild) {
+            connections.removeChild(connections.firstChild);
         }
-
-        // Adicionar botão de fechar se ainda não existir
-        if (!alert.querySelector('.alert-close')) {
-            const closeBtn = document.createElement('button');
-            closeBtn.type = 'button';
-            closeBtn.className = 'alert-close';
-            closeBtn.innerHTML = '&times;';
-            closeBtn.setAttribute('aria-label', 'Fechar');
-            closeBtn.style.position = 'absolute';
-            closeBtn.style.right = '10px';
-            closeBtn.style.top = '50%';
-            closeBtn.style.transform = 'translateY(-50%)';
-            closeBtn.style.background = 'transparent';
-            closeBtn.style.border = 'none';
-            closeBtn.style.color = 'inherit';
-            closeBtn.style.fontSize = '1.2rem';
-            closeBtn.style.opacity = '0.7';
-            closeBtn.style.cursor = 'pointer';
-            closeBtn.style.padding = '0 10px';
-
-            // Posicionar relativamente
-            if (!alert.style.position || alert.style.position === 'static') {
-                alert.style.position = 'relative';
+        
+        // Atualizar cada partícula
+        particles.forEach((particle, index) => {
+            // Mover partícula
+            particle.x += particle.speedX;
+            particle.y += particle.speedY;
+            
+            // Aplicar efeito de pulsação suave
+            particle.pulse += particle.pulseSpeed;
+            const pulseFactor = 0.2 * Math.sin(particle.pulse) + 1;
+            const currentSize = particle.size * pulseFactor;
+            
+            // Verificar limites da tela e inverter direção se necessário
+            if (particle.x < 0 || particle.x > 100) {
+                particle.speedX *= -1;
+                particle.x = particle.x < 0 ? 0 : 100;
             }
-
-            closeBtn.addEventListener('click', function() {
-                fadeOutAndRemove(alert);
-            });
-
-            alert.appendChild(closeBtn);
-        }
-    });
-}
-
-/**
- * Anima a remoção de um elemento com fade out
- */
-function fadeOutAndRemove(element) {
-    element.style.transition = 'opacity 0.3s ease-out';
-    element.style.opacity = '0';
-
-    setTimeout(() => {
-        if (element.parentNode) {
-            element.parentNode.removeChild(element);
-        }
-    }, 300);
-}
-
-/**
- * Melhora interações de formulário
- */
-function enhanceFormInteractions() {
-    // Adicionar efeitos de foco para campos de formulário
-    const formControls = document.querySelectorAll('.form-control');
-
-    formControls.forEach(control => {
-        // Adicionar classe quando o campo recebe foco
-        control.addEventListener('focus', function() {
-            const inputGroup = this.closest('.input-group');
-            if (inputGroup) {
-                inputGroup.classList.add('focused');
-            }
-        });
-
-        // Remover classe quando o campo perde o foco
-        control.addEventListener('blur', function() {
-            const inputGroup = this.closest('.input-group');
-            if (inputGroup) {
-                inputGroup.classList.remove('focused');
-            }
-        });
-
-        // Verificar se o campo tem valor para manter label acima
-        control.addEventListener('input', function() {
-            const inputGroup = this.closest('.input-group');
-            if (inputGroup) {
-                if (this.value.trim() !== '') {
-                    inputGroup.classList.add('has-value');
-                } else {
-                    inputGroup.classList.remove('has-value');
-                }
-            }
-        });
-
-        // Verificar valor inicial
-        if (control.value.trim() !== '') {
-            const inputGroup = control.closest('.input-group');
-            if (inputGroup) {
-                inputGroup.classList.add('has-value');
-            }
-        }
-    });
-
-    // Melhorar interação de botões
-    const buttons = document.querySelectorAll('.btn, button[type="submit"]');
-
-    buttons.forEach(button => {
-        button.addEventListener('click', function() {
-            // Adicionar efeito de ondulação ao clicar
-            if (!this.querySelector('.ripple-effect')) {
-                this.style.position = 'relative';
-                this.style.overflow = 'hidden';
-
-                const ripple = document.createElement('span');
-                ripple.className = 'ripple-effect';
-                ripple.style.position = 'absolute';
-                ripple.style.borderRadius = '50%';
-                ripple.style.backgroundColor = 'rgba(255, 255, 255, 0.3)';
-                ripple.style.transform = 'scale(0)';
-                ripple.style.animation = 'ripple 0.6s linear';
-                ripple.style.pointerEvents = 'none';
-
-                this.appendChild(ripple);
-
-                // Remover após a animação
-                setTimeout(() => {
-                    ripple.remove();
-                }, 600);
-            }
-        });
-    });
-
-    // Adicionar estilo CSS para efeito de ondulação se ainda não existir
-    if (!document.getElementById('ripple-style')) {
-        const style = document.createElement('style');
-        style.id = 'ripple-style';
-        style.textContent = `
-            @keyframes ripple {
-                to {
-                    transform: scale(4);
-                    opacity: 0;
-                }
+            if (particle.y < 0 || particle.y > 100) {
+                particle.speedY *= -1;
+                particle.y = particle.y < 0 ? 0 : 100;
             }
             
-            .ripple-effect {
-                width: 100px;
-                height: 100px;
-                top: calc(50% - 50px);
-                left: calc(50% - 50px);
-                opacity: 1;
+            // Atualizar posição e tamanho da partícula
+            particle.element.setAttribute('cx', `${particle.x}%`);
+            particle.element.setAttribute('cy', `${particle.y}%`);
+            particle.element.setAttribute('r', currentSize);
+            
+            // Otimização: limitar a criação de conexões apenas para partículas próximas
+            for (let i = index + 1; i < particles.length; i++) {
+                const otherParticle = particles[i];
+                
+                // Calcular distância entre partículas
+                const dx = particle.x - otherParticle.x;
+                const dy = particle.y - otherParticle.y;
+                
+                // Otimização: verificação rápida de distância antes do cálculo completo
+                if (Math.abs(dx) < config.connectionDistance && Math.abs(dy) < config.connectionDistance) {
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    // Conectar se estiver próximo
+                    if (distance < config.connectionDistance) {
+                        const opacity = 0.2 * (1 - distance / config.connectionDistance);
+                        const line = document.createElementNS(svgNS, 'line');
+                        line.setAttribute('x1', `${particle.x}%`);
+                        line.setAttribute('y1', `${particle.y}%`);
+                        line.setAttribute('x2', `${otherParticle.x}%`);
+                        line.setAttribute('y2', `${otherParticle.y}%`);
+                        line.setAttribute('stroke-opacity', opacity);
+                        connections.appendChild(line);
+                    }
+                }
             }
-        `;
-        document.head.appendChild(style);
-    }
-}
-
-/**
- * Configurar recursos de acessibilidade
- */
-function setupAccessibilityFeatures() {
-    // Adicionar atributos ARIA onde necessário
-    const requiredFields = document.querySelectorAll('input[required], select[required], textarea[required]');
-
-    requiredFields.forEach(field => {
-        field.setAttribute('aria-required', 'true');
-    });
-
-    // Melhorar acessibilidade de links
-    const links = document.querySelectorAll('a');
-
-    links.forEach(link => {
-        // Adicionar atributo para links externos
-        if (link.hostname !== window.location.hostname &&
-            !link.hasAttribute('rel')) {
-            link.setAttribute('rel', 'noopener noreferrer');
-        }
-
-        // Melhorar acessibilidade para links sem texto
-        if (!link.textContent.trim() && !link.getAttribute('aria-label')) {
-            const linkImage = link.querySelector('img');
-            if (linkImage && linkImage.getAttribute('alt')) {
-                link.setAttribute('aria-label', linkImage.getAttribute('alt'));
-            } else {
-                link.setAttribute('aria-label', 'Link');
-            }
-        }
-    });
-}
-
-/**
- * Melhorias específicas para a página de autenticação
- */
-function enhanceAuthPage() {
-    // Detectar se já existe script de partículas e inserir se necessário
-    let particlesScript = document.querySelector('script[src*="particles.js"]');
-
-    if (!particlesScript) {
-        particlesScript = document.createElement('script');
-        particlesScript.src = '../assets/js/particles.js';
-        document.body.appendChild(particlesScript);
-    }
-
-    // Adicionar efeitos de transição de formulário
-    const formGroups = document.querySelectorAll('.auth-form .form-group');
-
-    formGroups.forEach((group, index) => {
-        group.style.opacity = '0';
-        group.style.transform = 'translateY(10px)';
-        group.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
-
-        // Atrasar a animação com base no índice
-        setTimeout(() => {
-            group.style.opacity = '1';
-            group.style.transform = 'translateY(0)';
-        }, 100 + (index * 50));
-    });
-
-    // Melhorar botão de envio
-    const submitBtn = document.querySelector('.auth-form .btn-block');
-    if (submitBtn) {
-        submitBtn.addEventListener('mouseenter', function() {
-            this.style.transform = 'translateY(-2px)';
-            this.style.boxShadow = 'var(--shadow-primary)';
         });
-
-        submitBtn.addEventListener('mouseleave', function() {
-            this.style.transform = '';
-            this.style.boxShadow = '';
+        
+        // Continuar a animação
+        requestAnimationFrame(updateParticles);
+    }
+    
+    // Iniciar animação
+    updateParticles();
+    
+    // Interação com mouse/toque
+    function addInteractivity() {
+        // Não adicionar interatividade se preferir movimento reduzido
+        if (isLowPower) return;
+        
+        const pointerEvents = ['mousemove', 'touchmove'];
+        
+        pointerEvents.forEach(event => {
+            document.addEventListener(event, (e) => {
+                // Obter posição normalizada do ponteiro (0-100%)
+                let pointerX, pointerY;
+                
+                if (event === 'touchmove') {
+                    pointerX = (e.touches[0].clientX / window.innerWidth) * 100;
+                    pointerY = (e.touches[0].clientY / window.innerHeight) * 100;
+                } else {
+                    pointerX = (e.clientX / window.innerWidth) * 100;
+                    pointerY = (e.clientY / window.innerHeight) * 100;
+                }
+                
+                // Raio de influência do mouse
+                const influenceRadius = isMobile ? 10 : 20;
+                
+                // Aplicar efeito às partículas próximas do cursor
+                particles.forEach(particle => {
+                    const dx = particle.x - pointerX;
+                    const dy = particle.y - pointerY;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    // Se a partícula estiver próxima do cursor
+                    if (distance < influenceRadius) {
+                        // Calcular fator baseado na distância (mais próximo = efeito mais forte)
+                        const factor = 1 - distance / influenceRadius;
+                        
+                        // Adicionamos pequena velocidade de repulsão
+                        const repelStrength = isMobile ? 0.05 : 0.1;
+                        const angleRad = Math.atan2(dy, dx);
+                        
+                        particle.speedX += Math.cos(angleRad) * factor * repelStrength;
+                        particle.speedY += Math.sin(angleRad) * factor * repelStrength;
+                        
+                        // Limitar velocidade máxima
+                        const maxSpeed = 0.3 * config.animationSpeed;
+                        const currentSpeed = Math.sqrt(
+                            particle.speedX * particle.speedX + 
+                            particle.speedY * particle.speedY
+                        );
+                        
+                        if (currentSpeed > maxSpeed) {
+                            const scale = maxSpeed / currentSpeed;
+                            particle.speedX *= scale;
+                            particle.speedY *= scale;
+                        }
+                    }
+                });
+            }, { passive: true });
         });
     }
-}
+    
+    // Adicionar interatividade se não for dispositivo de baixa potência
+    addInteractivity();
+});

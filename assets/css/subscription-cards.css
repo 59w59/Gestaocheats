@@ -1,0 +1,174 @@
+.subscription-plans {
+    padding: 50px 0;
+    background: var(--bg-gradient);
+}
+
+.plan-card {
+    position: relative;
+    background: var(--card-bg);
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease;
+    border: 1px solid rgba(0, 255, 157, 0.1);
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.plan-card.popular {
+    transform: scale(1.05);
+    border: 2px solid var(--primary-color);
+}
+
+.popular-badge {
+    position: absolute;
+    top: -12px;
+    right: 20px;
+    background: #00ff9d;
+    color: #0d1117;
+    padding: 5px 15px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.plan-header {
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+.plan-title {
+    font-size: 24px;
+    color: var(--heading-color);
+    margin-bottom: 15px;
+}
+
+.plan-price {
+    font-size: 36px;
+    font-weight: bold;
+    color: #00ff9d;
+}
+
+.plan-price .currency {
+    font-size: 20px;
+    vertical-align: super;
+}
+
+.plan-price .period {
+    font-size: 16px;
+    color: var(--text-muted);
+}
+
+.plan-features {
+    margin: 25px 0;
+}
+
+.plan-features ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.plan-features li {
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+    font-size: 0.95rem;
+    color: #e0e0e0;
+}
+
+.plan-features li:last-child {
+    border-bottom: none;
+}
+
+.plan-features i {
+    color: var(--success-color);
+    margin-right: 10px;
+}
+
+.plan-features li i {
+    width: 20px;
+    margin-right: 10px;
+    color: #00ff9d;
+}
+
+.plan-footer {
+    text-align: center;
+    margin-top: 30px;
+}
+
+.btn-subscribe {
+    width: 100%;
+    padding: 12px 20px;
+    font-size: 16px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background: #00ff9d;
+    color: #0d1117;
+    border: none;
+    transition: all 0.3s ease;
+}
+
+/* Hover Effects */
+.plan-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+}
+
+.plan-card.popular:hover {
+    transform: scale(1.05) translateY(-5px);
+}
+
+.btn-subscribe:hover {
+    background: #00cc7d;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 255, 157, 0.2);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .plan-card, .plan-card.popular {
+        transform: none;
+    }
+    
+    .plan-card:hover, 
+    .plan-card.popular:hover {
+        transform: translateY(-5px);
+    }
+}
+
+.game-section {
+    padding: 2rem 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.game-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.game-image {
+    width: 60px;
+    height: 60px;
+    border-radius: 10px;
+    margin-right: 1rem;
+    object-fit: cover;
+}
+
+.cheat-section {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 15px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.cheat-section h3 {
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+}

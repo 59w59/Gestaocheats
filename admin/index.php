@@ -3,18 +3,38 @@ define('INCLUDED_FROM_INDEX', true);
 require_once '../includes/config.php';
 require_once '../includes/db.php';
 require_once '../includes/functions.php';
-require_once 'includes/admin_functions.php';
+require_once '../includes/admin_functions.php';
+require_once '../includes/admin_auth.php';
 
 // Verificar se o administrador está logado
-if (!is_admin_logged_in()) {
-    redirect('login.php');
+if (!isset($_SESSION['admin_id']) || empty($_SESSION['admin_id'])) {
+    // Redirecionar para a página de login se não estiver logado
+    header('Location: login.php');
+    exit();
 }
 
-// Obter dados do administrador
-$admin_id = $_SESSION['admin_id'];
-$stmt = $db->prepare("SELECT * FROM admins WHERE id = ?");
+// Add this after the session check
+if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > 1800)) {
+    // If last activity was more than 30 minutes ago
+    session_destroy();
+    header('Location: login.php?error=session_expired');
+    exit();
+}
+$_SESSION['last_activity'] = time(); // Update last activity time
+
+// Obter dados do administrador com verificação de segurança
+$admin_id = filter_var($_SESSION['admin_id'], FILTER_SANITIZE_NUMBER_INT);
+$stmt = $db->prepare("SELECT id, username, email FROM admins WHERE id = ? AND is_active = 1 LIMIT 1");
 $stmt->execute([$admin_id]);
 $admin = $stmt->fetch(PDO::FETCH_ASSOC);
+
+// Verificar se o admin existe e está ativo
+if (!$admin) {
+    // Destruir sessão e redirecionar se o admin não for válido
+    session_destroy();
+    header('Location: login.php?error=invalid_session');
+    exit();
+}
 
 // Obter estatísticas gerais
 $stats = [
@@ -36,6 +56,7 @@ $recent_activities = get_recent_activities(10);
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -46,35 +67,121 @@ $recent_activities = get_recent_activities(10);
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <!-- Google Fonts - Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Apex Charts -->
-    <link href="https://cdn.jsdelivr.net/npm/apexcharts@3.28.0/dist/apexcharts.min.css" rel="stylesheet">
+    <!-- Apex Charts - Versão atualizada -->
+    <link href="https://cdn.jsdelivr.net/npm/apexcharts/dist/apexcharts.css" rel="stylesheet">
     <!-- CSS Personalizado -->
     <link rel="stylesheet" href="../assets/css/variables.css">
     <link rel="stylesheet" href="../assets/css/AdminPanelStyles.css">
+    <link rel="stylesheet" href="../assets/css/custom.css">
+    <link rel="stylesheet" href="../assets/css/scroll.css">
 </head>
+
 <body class="admin-page">
-    <!-- Sidebar -->
     <aside class="admin-sidebar">
         <div class="admin-sidebar-header">
             <div class="admin-logo">
-                <?php echo SITE_NAME; ?> <span class="admin-badge">ADMIN</span>
+                <span class="logo-text"><?php echo SITE_NAME; ?></span>
+                <span class="admin-badge">ADMIN</span>
             </div>
+            <button class="sidebar-toggle d-md-none">
+                <i class="fas fa-bars"></i>
+            </button>
         </div>
+        
         <nav class="admin-nav">
-            <ul>
-                <li><a href="index.php" class="active"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
-                <li><a href="pages/users.php"><i class="fas fa-users"></i> Usuários</a></li>
-                <li><a href="pages/subscriptions.php"><i class="fas fa-credit-card"></i> Assinaturas</a></li>
-                <li><a href="pages/cheats.php"><i class="fas fa-gamepad"></i> Cheats</a></li>
-                <li><a href="pages/plans.php"><i class="fas fa-tags"></i> Planos</a></li>
-                <li><a href="pages/transactions.php"><i class="fas fa-money-bill-wave"></i> Transações</a></li>
-                <li><a href="pages/support.php"><i class="fas fa-headset"></i> Suporte</a></li>
-                <li><a href="pages/logs.php"><i class="fas fa-list"></i> Logs</a></li>
-                <li><a href="pages/settings.php"><i class="fas fa-cog"></i> Configurações</a></li>
-            </ul>
+            <div class="nav-section">
+                <h6 class="nav-section-title">Principal</h6>
+                <ul>
+                    <li>
+                        <a href="/Gestaocheats/admin/index.php" 
+                           class="<?php echo basename($_SERVER['PHP_SELF']) == 'index.php' ? 'active' : ''; ?>">
+                            <i class="fas fa-tachometer-alt"></i> Dashboard
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/Gestaocheats/admin/pages/users.php" 
+                           class="<?php echo basename($_SERVER['PHP_SELF']) == 'users.php' ? 'active' : ''; ?>">
+                            <i class="fas fa-users"></i> Usuários
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="nav-section">
+                <h6 class="nav-section-title">Gerenciamento</h6>
+                <ul>
+                    <li>
+                        <a href="/Gestaocheats/admin/pages/subscriptions.php" 
+                           class="<?php echo basename($_SERVER['PHP_SELF']) == 'subscriptions.php' ? 'active' : ''; ?>">
+                            <i class="fas fa-credit-card"></i> Assinaturas
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/Gestaocheats/admin/pages/plans.php" 
+                           class="<?php echo basename($_SERVER['PHP_SELF']) == 'plans.php' ? 'active' : ''; ?>">
+                            <i class="fas fa-tags"></i> Planos
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="nav-section">
+                <h6 class="nav-section-title">Conteúdo</h6>
+                <ul>
+                    <li>
+                        <a href="/Gestaocheats/admin/pages/games.php" 
+                           class="<?php echo basename($_SERVER['PHP_SELF']) == 'games.php' ? 'active' : ''; ?>">
+                            <i class="fas fa-gamepad"></i> Jogos
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/Gestaocheats/admin/pages/cheats.php" 
+                           class="<?php echo basename($_SERVER['PHP_SELF']) == 'cheats.php' ? 'active' : ''; ?>">
+                            <i class="fas fa-code"></i> Cheats
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="nav-section">
+                <h6 class="nav-section-title">Sistema</h6>
+                <ul>
+                    <li>
+                        <a href="/Gestaocheats/admin/pages/transactions.php" 
+                           class="<?php echo basename($_SERVER['PHP_SELF']) == 'transactions.php' ? 'active' : ''; ?>">
+                            <i class="fas fa-money-bill-wave"></i> Transações
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/Gestaocheats/admin/pages/support.php" 
+                           class="<?php echo basename($_SERVER['PHP_SELF']) == 'support.php' ? 'active' : ''; ?>">
+                            <i class="fas fa-headset"></i> Suporte
+                            <?php if (function_exists('get_pending_support_tickets') && get_pending_support_tickets() > 0): ?>
+                                <span class="badge bg-danger"><?php echo get_pending_support_tickets(); ?></span>
+                            <?php endif; ?>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/Gestaocheats/admin/pages/logs.php" 
+                           class="<?php echo basename($_SERVER['PHP_SELF']) == 'logs.php' ? 'active' : ''; ?>">
+                            <i class="fas fa-list"></i> Logs
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/Gestaocheats/admin/pages/settings.php" 
+                           class="<?php echo basename($_SERVER['PHP_SELF']) == 'settings.php' ? 'active' : ''; ?>">
+                            <i class="fas fa-cog"></i> Configurações
+                        </a>
+                    </li>
+                </ul>
+            </div>
         </nav>
+
         <div class="admin-sidebar-footer">
-            <a href="logout.php" class="btn btn-logout"><i class="fas fa-sign-out-alt"></i> Sair</a>
+            <div class="admin-user-info">
+            <a href="/Gestaocheats/admin/logout.php" class="btn btn-logout" title="Sair">
+                <i class="fas fa-sign-out-alt"></i> <span class="btn-text">Sair</span>
+            </a>
         </div>
     </aside>
 
@@ -113,19 +220,19 @@ $recent_activities = get_recent_activities(10);
                             if (!empty($notifications)):
                                 foreach ($notifications as $notification):
                             ?>
-                                <a href="<?php echo $notification['link']; ?>" class="dropdown-item">
-                                    <div class="notification-icon <?php echo $notification['icon_class']; ?>">
-                                        <i class="<?php echo $notification['icon']; ?>"></i>
-                                    </div>
-                                    <div class="notification-content">
-                                        <p><?php echo $notification['message']; ?></p>
-                                        <span class="notification-time"><?php echo time_elapsed_string($notification['created_at']); ?></span>
-                                    </div>
-                                </a>
-                            <?php
+                                    <a href="<?php echo $notification['link']; ?>" class="dropdown-item">
+                                        <div class="notification-icon <?php echo $notification['icon_class']; ?>">
+                                            <i class="<?php echo $notification['icon']; ?>"></i>
+                                        </div>
+                                        <div class="notification-content">
+                                            <p><?php echo $notification['message']; ?></p>
+                                            <span class="notification-time"><?php echo time_elapsed_string($notification['created_at']); ?></span>
+                                        </div>
+                                    </a>
+                                <?php
                                 endforeach;
                             else:
-                            ?>
+                                ?>
                                 <div class="dropdown-item empty">
                                     <p>Nenhuma notificação recente</p>
                                 </div>
@@ -268,28 +375,28 @@ $recent_activities = get_recent_activities(10);
                                 </thead>
                                 <tbody>
                                     <?php foreach ($recent_activities as $activity): ?>
-                                    <tr>
-                                        <td>
-                                            <div class="user-info">
-                                                <img src="<?php echo get_user_avatar($activity['user_id']); ?>" alt="Avatar" class="user-avatar">
-                                                <span><?php echo $activity['username']; ?></span>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <span class="activity-label 
-                                                <?php 
-                                                    if (strpos($activity['action'], 'login') !== false) echo 'bg-info';
-                                                    else if (strpos($activity['action'], 'download') !== false) echo 'bg-success';
-                                                    else if (strpos($activity['action'], 'subscribe') !== false) echo 'bg-primary';
-                                                    else echo 'bg-secondary';
+                                        <tr>
+                                            <td>
+                                                <div class="user-info">
+                                                    <img src="<?php echo get_user_avatar($activity['user_id']); ?>" alt="Avatar" class="user-avatar">
+                                                    <span><?php echo $activity['username']; ?></span>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="activity-label 
+                                                <?php
+                                                if (strpos($activity['action'], 'login') !== false) echo 'bg-info';
+                                                else if (strpos($activity['action'], 'download') !== false) echo 'bg-success';
+                                                else if (strpos($activity['action'], 'subscribe') !== false) echo 'bg-primary';
+                                                else echo 'bg-secondary';
                                                 ?>
                                             ">
-                                                <?php echo $activity['action']; ?>
-                                            </span>
-                                        </td>
-                                        <td><?php echo date('d/m/Y H:i', strtotime($activity['created_at'])); ?></td>
-                                        <td><?php echo $activity['ip']; ?></td>
-                                    </tr>
+                                                    <?php echo $activity['action']; ?>
+                                                </span>
+                                            </td>
+                                            <td><?php echo date('d/m/Y H:i', strtotime($activity['created_at'])); ?></td>
+                                            <td><?php echo isset($activity['ip']) ? $activity['ip'] : 'N/A'; ?></td>
+                                        </tr>
                                     <?php endforeach; ?>
                                 </tbody>
                             </table>
@@ -303,22 +410,22 @@ $recent_activities = get_recent_activities(10);
                     </div>
                     <div class="card-body">
                         <ul class="recent-users-list">
-                            <?php 
+                            <?php
                             $recent_users = get_recent_users(5);
-                            foreach ($recent_users as $user): 
+                            foreach ($recent_users as $user):
                             ?>
-                            <li>
-                                <div class="user-info">
-                                    <img src="<?php echo get_user_avatar($user['id']); ?>" alt="Avatar" class="user-avatar">
-                                    <div class="user-details">
-                                        <span class="user-name"><?php echo $user['username']; ?></span>
-                                        <span class="user-date"><?php echo date('d/m/Y H:i', strtotime($user['created_at'])); ?></span>
+                                <li>
+                                    <div class="user-info">
+                                        <img src="<?php echo get_user_avatar($user['id']); ?>" alt="Avatar" class="user-avatar">
+                                        <div class="user-details">
+                                            <span class="user-name"><?php echo $user['username']; ?></span>
+                                            <span class="user-date"><?php echo date('d/m/Y H:i', strtotime($user['created_at'])); ?></span>
+                                        </div>
                                     </div>
-                                </div>
-                                <a href="pages/user_edit.php?id=<?php echo $user['id']; ?>" class="btn btn-sm btn-outline-primary">
-                                    <i class="fas fa-pencil-alt"></i>
-                                </a>
-                            </li>
+                                    <a href="pages/user_edit.php?id=<?php echo $user['id']; ?>" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-pencil-alt"></i>
+                                    </a>
+                                </li>
                             <?php endforeach; ?>
                         </ul>
                     </div>
@@ -347,175 +454,160 @@ $recent_activities = get_recent_activities(10);
     <!-- Scripts -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.28.0/dist/apexcharts.min.js"></script>
+    <!-- Apex Charts - Versão atualizada -->
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts/dist/apexcharts.min.js"></script>
     <script>
-        // Dados para os gráficos
-        const revenueData = <?php echo json_encode($revenue_chart_data); ?>;
-        const usersData = <?php echo json_encode($users_chart_data); ?>;
-        const downloadsData = <?php echo json_encode($downloads_chart_data); ?>;
-        
-        // Configuração do gráfico de receita
-        const revenueOptions = {
-            series: [{
-                name: 'Receita (R$)',
-                data: revenueData.values
-            }],
-            chart: {
-                type: 'area',
-                height: 300,
-                toolbar: {
-                    show: false
-                },
-                fontFamily: 'Inter, sans-serif'
-            },
-            dataLabels: {
-                enabled: false
-            },
-            stroke: {
-                curve: 'smooth',
-                width: 3
-            },
-            colors: ['#00cF9B'],
-            fill: {
-                type: 'gradient',
-                gradient: {
-                    shadeIntensity: 1,
-                    opacityFrom: 0.7,
-                    opacityTo: 0.2,
-                    stops: [0, 90, 100]
-                }
-            },
-            xaxis: {
-                categories: revenueData.dates,
-                labels: {
-                    style: {
-                        colors: '#8e8da4'
-                    }
-                }
-            },
-            yaxis: {
-                labels: {
-                    formatter: function (val) {
-                        return 'R$ ' + val.toFixed(2);
+        // Inicialização dos gráficos
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Inicializando gráficos...');
+
+            // Dados para os gráficos
+            const revenueData = <?php echo json_encode($revenue_chart_data); ?>;
+            const usersData = <?php echo json_encode($users_chart_data); ?>;
+            
+            // Configuração do gráfico de receita
+            const revenueOptions = {
+                series: [{
+                    name: 'Receita',
+                    data: revenueData.values
+                }],
+                chart: {
+                    type: 'area',
+                    height: 350,
+                    toolbar: {
+                        show: false
                     },
-                    style: {
-                        colors: '#8e8da4'
-                    }
-                }
-            },
-            tooltip: {
-                x: {
-                    format: 'dd/MM/yy'
+                    theme: 'dark' // Add this line to set the theme to dark
                 },
-                y: {
-                    formatter: function (val) {
-                        return 'R$ ' + val.toFixed(2);
-                    }
-                }
-            },
-            grid: {
-                borderColor: '#1A202C20',
-                strokeDashArray: 5,
-                position: 'back'
-            }
-        };
-
-        // Configuração do gráfico de usuários
-        const usersOptions = {
-            series: [{
-                name: 'Novos Usuários',
-                data: usersData.new_users
-            }, {
-                name: 'Novas Assinaturas',
-                data: usersData.new_subscriptions
-            }],
-            chart: {
-                type: 'line',
-                height: 300,
-                toolbar: {
-                    show: false
+                dataLabels: {
+                    enabled: false
                 },
-                fontFamily: 'Inter, sans-serif'
-            },
-            dataLabels: {
-                enabled: false
-            },
-            stroke: {
-                curve: 'smooth',
-                width: 3
-            },
-            colors: ['#4A90E2', '#00cF9B'],
-            xaxis: {
-                categories: usersData.dates,
-                labels: {
-                    style: {
-                        colors: '#8e8da4'
+                stroke: {
+                    curve: 'smooth',
+                    width: 2
+                },
+                fill: {
+                    type: 'gradient',
+                    gradient: {
+                        shadeIntensity: 1,
+                        opacityFrom: 0.7,
+                        opacityTo: 0.3
                     }
-                }
-            },
-            yaxis: {
-                labels: {
-                    style: {
-                        colors: '#8e8da4'
+                },
+                xaxis: {
+                    categories: revenueData.dates,
+                    labels: {
+                        style: {
+                            colors: '#8e8da4'
+                        }
                     }
+                },
+                yaxis: {
+                    labels: {
+                        formatter: function(val) {
+                            return 'R$ ' + val.toFixed(2);
+                        },
+                        style: {
+                            colors: '#8e8da4'
+                        }
+                    }
+                },
+                tooltip: {
+                    y: {
+                        formatter: function(val) {
+                            return 'R$ ' + val.toFixed(2);
+                        }
+                    },
+                    theme: 'dark' // Add this line to set tooltip theme to dark
                 }
-            },
-            legend: {
-                position: 'top',
-                horizontalAlign: 'right',
-                fontWeight: 500
-            },
-            grid: {
-                borderColor: '#1A202C20',
-                strokeDashArray: 5,
-                position: 'back'
-            }
-        };
-
-        // Inicializa os gráficos
-        const revenueChart = new ApexCharts(document.querySelector("#revenueChart"), revenueOptions);
-        revenueChart.render();
-
-        const usersChart = new ApexCharts(document.querySelector("#usersChart"), usersOptions);
-        usersChart.render();
-
-        // Sidebar Toggle
-        document.querySelector('.sidebar-toggle').addEventListener('click', function() {
-            document.body.classList.toggle('sidebar-collapsed');
-        });
-
-        // Dropdown Toggles
-        document.querySelectorAll('.dropdown-toggle').forEach(function(element) {
-            element.addEventListener('click', function(e) {
-                e.preventDefault();
-                this.nextElementSibling.classList.toggle('show');
+            };
+            // Configuração do gráfico de usuários
+            const usersOptions = {
+                series: [{
+                    name: 'Usuários',
+                    data: usersData.new_users
+                }, {
+                    name: 'Assinaturas',
+                    data: usersData.new_subscriptions
+                }],
+                chart: {
+                    type: 'line',
+                    height: 350,
+                    toolbar: {
+                        show: false
+                    },
+                    theme: 'dark'
+                },
+                dataLabels: {
+                    enabled: false
+                },
+                stroke: {
+                    width: [2, 2],
+                    curve: 'smooth'
+                },
+                xaxis: {
+                    categories: usersData.dates,
+                    labels: {
+                        style: {
+                            colors: '#8e8da4'
+                        }
+                    }
+                },
+                yaxis: {
+                    labels: {
+                        style: {
+                            colors: '#8e8da4'
+                        }
+                    }
+                },
+                tooltip: {
+                    theme: 'dark'
+                },
+                legend: {
+                    position: 'top'
+                }
+            };
+            
+            // Fechar dropdowns ao clicar fora
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.dropdown-toggle') && !e.target.closest('.dropdown-menu')) {
+                    document.querySelectorAll('.admin-notifications, .admin-user').forEach(function(container) {
+                        container.classList.remove('show');
+                    });
+                }
             });
-        });
-
-        // Click outside to close dropdowns
-        document.addEventListener('click', function(e) {
-            if (!e.target.closest('.dropdown-toggle')) {
-                document.querySelectorAll('.dropdown-menu').forEach(function(dropdown) {
-                    dropdown.classList.remove('show');
-                });
+            
+            // Renderizar os gráficos
+            if (document.getElementById('revenueChart')) {
+                const revenueChart = new ApexCharts(document.getElementById('revenueChart'), revenueOptions);
+                revenueChart.render();
             }
-        });
-
-        // Chart Range Toggles
-        document.querySelectorAll('.chart-action').forEach(function(button) {
-            button.addEventListener('click', function() {
-                const container = this.closest('.chart-actions');
-                container.querySelectorAll('.chart-action').forEach(function(btn) {
-                    btn.classList.remove('active');
+            
+            if (document.getElementById('usersChart')) {
+                const usersChart = new ApexCharts(document.getElementById('usersChart'), usersOptions);
+                usersChart.render();
+            }
+            
+            // Adicionar eventos aos botões de intervalo de tempo
+            document.querySelectorAll('.chart-action').forEach(button => {
+                button.addEventListener('click', function() {
+                    const range = this.getAttribute('data-range');
+                    const chartType = this.closest('.admin-chart-card').querySelector('.chart-header h3').textContent.includes('Receita') ? 'revenue' : 'users';
+                    
+                    // Remover classe ativa de todos os botões no mesmo grupo
+                    this.closest('.chart-actions').querySelectorAll('.chart-action').forEach(btn => {
+                        btn.classList.remove('active');
+                    });
+                    
+                    // Adicionar classe ativa ao botão clicado
+                    this.classList.add('active');
+                    
+                    // Aqui você pode implementar a lógica para atualizar os dados do gráfico
+                    console.log(`Alterando intervalo do gráfico ${chartType} para ${range} dias`);
                 });
-                this.classList.add('active');
-                
-                // Aqui você pode adicionar a lógica para atualizar o intervalo do gráfico
-                const range = this.dataset.range;
-                console.log('Updating chart range to', range, 'days');
-                // updateChartRange(chartId, range);
             });
         });
     </script>
 </body>
+
 </html>
