@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <system.webServer>
+        <rewrite>
+            <rules>
+                <!-- Redirecionar para HTTPS (descomente quando tiver SSL) -->
+                <!--
+                <rule name="Redirect to HTTPS" stopProcessing="true">
+                    <match url="(.*)" />
+                    <conditions>
+                        <add input="{HTTPS}" pattern="^OFF$" />
+                    </conditions>
+                    <action type="Redirect" url="https://{HTTP_HOST}/{R:1}" redirectType="Permanent" />
+                </rule>
+                -->
+                
+                <!-- Remover extensão .php -->
+                <rule name="Hide PHP Extension" stopProcessing="true">
+                    <match url="^(.*)$" ignoreCase="true" />
+                    <conditions>
+                        <add input="{REQUEST_FILENAME}" matchType="IsFile" negate="true" />
+                        <add input="{REQUEST_FILENAME}" matchType="IsDirectory" negate="true" />
+                        <add input="{REQUEST_FILENAME}.php" matchType="IsFile" />
+                    </conditions>
+                    <action type="Rewrite" url="{R:1}.php" />
+                </rule>
+                
+                <!-- Proteger diretório includes -->
+                <rule name="Protect Includes Directory" stopProcessing="true">
+                    <match url="^includes/.*" ignoreCase="true" />
+                    <action type="CustomResponse" statusCode="403" statusReason="Forbidden" statusDescription="Access Denied" />
+                </rule>
+                
+                <!-- Redirecionar usuários logados para o dashboard -->
+                <rule name="Redirect Logged Users" stopProcessing="true">
+                    <match url="^auth/(login|register)\.php$" ignoreCase="true" />
+                    <conditions>
+                        <add input="{HTTP_COOKIE}" pattern="user_logged_in=true" />
+                    </conditions>
+                    <action type="Redirect" url="/dashboard/" redirectType="Temporary" />
+                </rule>
+                
+                <!-- Proteger área de dashboard -->
+                <rule name="Protect Dashboard" stopProcessing="true">
+                    <match url="^dashboard/.*" ignoreCase="true" />
+                    <conditions>
+                        <add input="{HTTP_COOKIE}" pattern="user_logged_in=true" negate="true" />
+                    </conditions>
+                    <action type="Redirect" url="/auth/login.php" redirectType="Temporary" />
+                </rule>
+                
+                <!-- Proteger área administrativa -->
+                <rule name="Protect Admin Area" stopProcessing="true">
+                    <match url="^admin/.*" ignoreCase="true" />
+                    <conditions>
+                        <add input="{HTTP_COOKIE}" pattern="admin_logged_in=true" negate="true" />
+                    </conditions>
+                    <action type="Redirect" url="/auth/login.php?redirect=admin" redirectType="Temporary" />
+                </rule>
+            </rules>
+        </rewrite>
+        
+        <httpErrors errorMode="Custom">
+            <remove statusCode="404" />
+            <error statusCode="404" path="/pages/error.php?code=404" responseMode="ExecuteURL" />
+            <remove statusCode="403" />
+            <error statusCode="403" path="/pages/error.php?code=403" responseMode="ExecuteURL" />
+            <remove statusCode="500" />
+            <error statusCode="500" path="/pages/error.php?code=500" responseMode="ExecuteURL" />
+        </httpErrors>
+        
+        <security>
+            <requestFiltering>
+                <!-- Limite de tamanho de upload (10MB) -->
+                <requestLimits maxAllowedContentLength="10485760" />
+            </requestFiltering>
+        </security>
+        
+        <httpProtocol>
+            <customHeaders>
+                <add name="X-Content-Type-Options" value="nosniff" />
+                <add name="X-XSS-Protection" value="1; mode=block" />
+                <add name="X-Frame-Options" value="SAMEORIGIN" />
+                <add name="Referrer-Policy" value="no-referrer-when-downgrade" />
+                <!-- <add name="Content-Security-Policy" value="default-src 'self'; script-src 'self' https://code.jquery.com https://cdn.jsdelivr.net; style-src 'self' https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data:;" /> -->
+            </customHeaders>
+        </httpProtocol>
+        
+        <staticContent>
+            <clientCache cacheControlMode="UseMaxAge" cacheControlMaxAge="30.00:00:00" />
+            <remove fileExtension=".woff" />
+            <remove fileExtension=".woff2" />
+            <mimeMap fileExtension=".woff" mimeType="application/font-woff" />
+            <mimeMap fileExtension=".woff2" mimeType="application/font-woff2" />
+        </staticContent>
+    </system.webServer>
+</configuration>

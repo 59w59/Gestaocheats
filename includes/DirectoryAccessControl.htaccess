@@ -1,0 +1,3 @@
+# Proteger diretório includes
+Order deny,allow
+Deny from all

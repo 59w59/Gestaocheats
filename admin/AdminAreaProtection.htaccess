@@ -1,0 +1,16 @@
+# Proteção para área administrativa
+RewriteEngine On
+
+# Negar acesso se não for um administrador autenticado
+# (Isso deve ser acompanhado por verificação em PHP também)
+RewriteCond %{HTTP_COOKIE} !admin_logged_in=true
+RewriteRule .* /auth/login.php?redirect=admin [R,L]
+
+# Proteção adicional - configuração de autenticação HTTP básica
+# Descomente as linhas abaixo para implementar autenticação HTTP
+# (Você precisará criar o arquivo .htpasswd)
+
+# AuthType Basic
+# AuthName "Área Administrativa Restrita"
+# AuthUserFile /caminho/completo/para/.htpasswd
+# Require valid-user

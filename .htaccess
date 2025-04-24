@@ -1,0 +1,126 @@
+# Arquivo .htaccess principal para Gaming Platform
+# Configurações para segurança, performance e URLs amigáveis
+
+# Ativar o módulo de reescrita
+RewriteEngine On
+
+# Base para todas as regras de reescrita
+RewriteBase /
+
+# Definir o índice padrão
+DirectoryIndex index.php
+
+# Configurações de segurança
+# Impedir acesso a arquivos sensíveis
+<FilesMatch "^\.(?!well-known/).*|(?:config\.php|db\.php|functions\.php|auth\.php|\.env|\.gitignore)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Proteger diretório includes
+<IfModule mod_rewrite.c>
+    RewriteRule ^includes/ - [F,L]
+</IfModule>
+
+# Prevenir listagem de diretórios
+Options -Indexes
+
+# Configurações para URLs amigáveis
+# Remover extensão .php
+<IfModule mod_rewrite.c>
+    # Se o arquivo solicitado não existir, tentar com extensão .php
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME}.php -f
+    RewriteRule ^(.*)$ $1.php [L]
+</IfModule>
+
+# Redirecionar para HTTPS (descomente quando tiver SSL)
+# <IfModule mod_rewrite.c>
+#     RewriteCond %{HTTPS} off
+#     RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+# </IfModule>
+
+# Configurações de cabeçalho HTTP
+<IfModule mod_headers.c>
+    # Ativar proteções de segurança
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-XSS-Protection "1; mode=block"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set Referrer-Policy "no-referrer-when-downgrade"
+    
+    # Política de segurança de conteúdo - Personalizar conforme necessário
+    # Header set Content-Security-Policy "default-src 'self'; script-src 'self' https://code.jquery.com https://cdn.jsdelivr.net; style-src 'self' https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data:;"
+</IfModule>
+
+# Configurações de cache
+<IfModule mod_expires.c>
+    ExpiresActive On
+    
+    # Imagens
+    ExpiresByType image/jpeg "access plus 1 year"
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType image/gif "access plus 1 year"
+    ExpiresByType image/webp "access plus 1 year"
+    ExpiresByType image/svg+xml "access plus 1 year"
+    ExpiresByType image/x-icon "access plus 1 year"
+    
+    # CSS, JavaScript
+    ExpiresByType text/css "access plus 1 month"
+    ExpiresByType text/javascript "access plus 1 month"
+    ExpiresByType application/javascript "access plus 1 month"
+    
+    # Fontes
+    ExpiresByType application/vnd.ms-fontobject "access plus 1 year"
+    ExpiresByType font/ttf "access plus 1 year"
+    ExpiresByType font/otf "access plus 1 year"
+    ExpiresByType font/woff "access plus 1 year"
+    ExpiresByType font/woff2 "access plus 1 year"
+</IfModule>
+
+# Compressão GZIP
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json application/xml
+</IfModule>
+
+# Configuração de PHP (se permitido no .htaccess)
+<IfModule mod_php7.c>
+    # Tempo máximo de execução do script
+    php_value max_execution_time 60
+    
+    # Tamanho máximo de upload
+    php_value upload_max_filesize 10M
+    php_value post_max_size 10M
+    
+    # Ocultar erros em produção
+    php_flag display_errors off
+    
+    # Logs de erro
+    php_flag log_errors on
+    
+    # Timezone
+    php_value date.timezone America/Sao_Paulo
+</IfModule>
+
+# Regras específicas para páginas de autenticação
+# Redirecionar para área autenticada se já estiver logado
+# (Isso deve ser acompanhado por verificação em PHP também)
+<IfModule mod_rewrite.c>
+    RewriteCond %{REQUEST_URI} ^/auth/(login|register)\.php
+    RewriteCond %{HTTP_COOKIE} user_logged_in=true
+    RewriteRule .* /dashboard/ [R,L]
+</IfModule>
+
+# Permitir acesso ao dashboard apenas para usuários autenticados
+# (Isso deve ser acompanhado por verificação em PHP também)
+<IfModule mod_rewrite.c>
+    RewriteCond %{REQUEST_URI} ^/dashboard/
+    RewriteCond %{HTTP_COOKIE} !user_logged_in=true
+    RewriteRule .* /auth/login.php [R,L]
+</IfModule>
+
+# Lidar com erros personalizados
+ErrorDocument 404 /pages/error.php?code=404
+ErrorDocument 403 /pages/error.php?code=403
+ErrorDocument 500 /pages/error.php?code=500
+
+# Fim do .htaccess
