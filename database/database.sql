@@ -82,13 +82,112 @@ CREATE TABLE IF NOT EXISTS `cheats` (
   `image` varchar(255) DEFAULT NULL,
   `download_count` int(11) NOT NULL DEFAULT 0,
   `is_active` tinyint(1) NOT NULL DEFAULT 1,
-  `min_subscription_level` int(11) NOT NULL DEFAULT 1,
+  `min_subscription_level` int DEFAULT 1 COMMENT 'Minimum subscription level required to access this cheat (1=Basic, 2=Premium, 3=VIP)',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `slug` (`slug`),
   KEY `game_id` (`game_id`),
   CONSTRAINT `cheats_ibfk_1` FOREIGN KEY (`game_id`) REFERENCES `games` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Tabela para planos de assinatura dos cheats
+CREATE TABLE IF NOT EXISTS `cheat_subscription_plans` (
+    `id` int(11) NOT NULL AUTO_INCREMENT,
+    `cheat_id` int(11) NOT NULL,
+    `name` varchar(100) NOT NULL,
+    `description` text NULL,
+    `price` decimal(10,2) NOT NULL,
+    `duration_days` int(11) NOT NULL,
+    `features` text NULL,
+    `discount_percentage` int(11) DEFAULT 0,
+    `is_active` tinyint(1) NOT NULL DEFAULT 1,
+    `display_order` int(11) NOT NULL DEFAULT 0,
+    `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+    `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+    PRIMARY KEY (`id`),
+    KEY `idx_cheat` (`cheat_id`),
+    CONSTRAINT `fk_cheat_subscription_plans_cheat_id` FOREIGN KEY (`cheat_id`) REFERENCES `cheats` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Tabela para assinaturas de usuários
+CREATE TABLE IF NOT EXISTS `user_subscriptions` (
+    `id` int(11) NOT NULL AUTO_INCREMENT,
+    `user_id` int(11) NOT NULL,
+    `cheat_plan_id` int(11) NOT NULL,
+    `status` enum('active','expired','cancelled','suspended') NOT NULL DEFAULT 'active',
+    `start_date` timestamp NOT NULL DEFAULT current_timestamp(),
+    `end_date` timestamp NOT NULL DEFAULT current_timestamp(),
+    `auto_renew` tinyint(1) NOT NULL DEFAULT 0,
+    `hwid` varchar(255) NULL,
+    `hwid_updated_at` timestamp NULL,
+    `notes` text NULL,
+    `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+    `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+    PRIMARY KEY (`id`),
+    KEY `idx_user_subscription` (`user_id`,`cheat_plan_id`),
+    KEY `idx_status` (`status`),
+    KEY `idx_end_date` (`end_date`),
+    CONSTRAINT `fk_user_subscriptions_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_user_subscriptions_plan_id` FOREIGN KEY (`cheat_plan_id`) REFERENCES `cheat_subscription_plans` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Tabela para pagamentos
+CREATE TABLE IF NOT EXISTS `payments` (
+    `id` int(11) NOT NULL AUTO_INCREMENT,
+    `user_id` int(11) NOT NULL,
+    `subscription_id` int(11) NOT NULL,
+    `transaction_id` varchar(100) NOT NULL,
+    `payment_method` varchar(20) NOT NULL,
+    `amount` decimal(10,2) NOT NULL,
+    `currency` varchar(3) NOT NULL DEFAULT 'BRL',
+    `status` enum('pending','completed','failed','refunded','cancelled') NOT NULL,
+    `gateway_response` text NULL,
+    `pix_code` text NULL,
+    `card_last_digits` varchar(4) NULL,
+    `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+    `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+    PRIMARY KEY (`id`),
+    KEY `idx_user` (`user_id`),
+    KEY `idx_subscription` (`subscription_id`),
+    KEY `idx_transaction` (`transaction_id`),
+    KEY `idx_status` (`status`),
+    CONSTRAINT `fk_payments_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_payments_subscription_id` FOREIGN KEY (`subscription_id`) REFERENCES `user_subscriptions` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Tabela para cartões salvos
+CREATE TABLE IF NOT EXISTS `user_payment_methods` (
+    `id` int(11) NOT NULL AUTO_INCREMENT,
+    `user_id` int(11) NOT NULL,
+    `payment_type` enum('card','bank_account') NOT NULL,
+    `card_brand` varchar(20) NULL,
+    `last_four_digits` varchar(4) NULL,
+    `holder_name` varchar(100) NULL,
+    `expiry_month` varchar(2) NULL,
+    `expiry_year` varchar(2) NULL,
+    `token` varchar(255) NOT NULL,
+    `is_default` tinyint(1) NOT NULL DEFAULT 0,
+    `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+    `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+    PRIMARY KEY (`id`),
+    KEY `idx_user` (`user_id`),
+    CONSTRAINT `fk_user_payment_methods_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Tabela para logs de atividades do usuário relacionados a pagamentos
+CREATE TABLE IF NOT EXISTS `user_logs` (
+    `id` int(11) NOT NULL AUTO_INCREMENT,
+    `user_id` int(11) NOT NULL,
+    `action` varchar(50) NOT NULL,
+    `description` text NULL,
+    `ip_address` varchar(45) NULL,
+    `user_agent` text NULL,
+    `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+    PRIMARY KEY (`id`),
+    KEY `idx_user_action` (`user_id`,`action`),
+    KEY `idx_created_at` (`created_at`),
+    CONSTRAINT `fk_user_logs_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Tabela de Downloads de Usuários
@@ -109,15 +208,21 @@ CREATE TABLE IF NOT EXISTS `user_downloads` (
 -- Tabela de Tickets de Suporte
 CREATE TABLE IF NOT EXISTS `support_tickets` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
+  `ticket_id` varchar(20) NOT NULL,
   `user_id` int(11) NOT NULL,
   `subject` varchar(255) NOT NULL,
   `message` text NOT NULL,
+  `category` enum('technical','billing','account','other') NOT NULL DEFAULT 'technical',
   `status` enum('open','in_progress','closed') NOT NULL DEFAULT 'open',
   `priority` enum('low','medium','high') NOT NULL DEFAULT 'medium',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `user_id` (`user_id`),
+  KEY `idx_ticket_id` (`ticket_id`),
+  KEY `idx_status` (`status`),
+  KEY `idx_category` (`category`),
+  KEY `idx_priority` (`priority`),
   CONSTRAINT `support_tickets_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -156,7 +261,7 @@ CREATE TABLE IF NOT EXISTS `ticket_attachments` (
   CONSTRAINT `ticket_attachments_response_fk` FOREIGN KEY (`response_id`) REFERENCES `ticket_responses` (`id`) ON DELETE CASCADE,
   CONSTRAINT `ticket_attachments_ticket_fk` FOREIGN KEY (`ticket_id`) REFERENCES `support_tickets` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- Tabela de Depoimentos
 CREATE TABLE IF NOT EXISTS `testimonials` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -187,7 +292,7 @@ CREATE TABLE IF NOT EXISTS `remember_tokens` (
 
 -- Tabela de Administradores
 CREATE TABLE IF NOT EXISTS `admins` (
-                                        `id` int(11) NOT NULL AUTO_INCREMENT,
+    `id` int(11) NOT NULL AUTO_INCREMENT,
     `username` varchar(50) NOT NULL,
     `email` varchar(100) NOT NULL,
     `password` varchar(255) NOT NULL,
@@ -200,12 +305,13 @@ CREATE TABLE IF NOT EXISTS `admins` (
     `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     UNIQUE KEY `username` (`username`),
-    UNIQUE KEY `email` (`email`)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    UNIQUE KEY `email` (`email`),
+    INDEX `idx_admin_status` (`is_active`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Tabela de Logs de Administradores
 CREATE TABLE IF NOT EXISTS `admin_logs` (
-                                            `id` int(11) NOT NULL AUTO_INCREMENT,
+    `id` int(11) NOT NULL AUTO_INCREMENT,
     `admin_id` int(11) NOT NULL,
     `action` varchar(100) NOT NULL,
     `details` text DEFAULT NULL,
@@ -215,11 +321,11 @@ CREATE TABLE IF NOT EXISTS `admin_logs` (
     PRIMARY KEY (`id`),
     KEY `admin_id` (`admin_id`),
     CONSTRAINT `admin_logs_ibfk_1` FOREIGN KEY (`admin_id`) REFERENCES `admins` (`id`) ON DELETE CASCADE
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Tabela de Tentativas de Login
 CREATE TABLE IF NOT EXISTS `login_attempts` (
-                                                `id` int(11) NOT NULL AUTO_INCREMENT,
+    `id` int(11) NOT NULL AUTO_INCREMENT,
     `username` varchar(100) NOT NULL,
     `ip` varchar(45) NOT NULL,
     `user_agent` text DEFAULT NULL,
@@ -228,9 +334,9 @@ CREATE TABLE IF NOT EXISTS `login_attempts` (
     PRIMARY KEY (`id`),
     KEY `username` (`username`),
     KEY `ip` (`ip`)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-    -- Tabela de Notificações
+-- Tabela de Notificações
 CREATE TABLE IF NOT EXISTS `notifications` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `title` varchar(255) NOT NULL,

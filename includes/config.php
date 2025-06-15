@@ -6,7 +6,7 @@ if (session_status() == PHP_SESSION_NONE) {
 
 // Configurações do site
 define('SITE_NAME', 'GestãoCheats');
-define('SITE_URL', 'http://localhost/Gestaocheats');
+define('SITE_URL', 'https://seu-site.com'); // Substitua pelo seu domínio real
 define('ADMIN_EMAIL', 'admin@gestaocheats.com');
 
 // Configurações de timezone
@@ -17,11 +17,12 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
-// Chaves de API (substitua por suas chaves reais)
-define('STRIPE_PUBLIC_KEY', 'pk_test_sua_chave_publica');
-define('STRIPE_SECRET_KEY', 'sk_test_sua_chave_secreta');
-define('PAYPAL_CLIENT_ID', 'seu_client_id_paypal');
-define('PAYPAL_SECRET', 'seu_secret_paypal');
+// Configurações do Mercado Pago (substitua com suas credenciais reais)
+define('MP_PUBLIC_KEY', 'SUA_CHAVE_PUBLICA_MP');
+define('MP_ACCESS_TOKEN', 'SEU_ACCESS_TOKEN_MP');
+define('MP_CLIENT_ID', 'xxxxxxxxxxxx');
+define('MP_CLIENT_SECRET', 'xxxxxxxxxxxxxxxxxxxxxxxxxxxx');
+define('MP_INTEGRATOR_ID', 'SEU_ID_INTEGRADOR_MP'); // opcional
 
 // Configurações de segurança
 define('HASH_COST', 12); // Custo do bcrypt
